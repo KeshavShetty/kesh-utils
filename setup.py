@@ -13,11 +13,11 @@ with open(os.path.join(HERE, "README.md")) as fid:
 # This call to setup() does all the work
 setup(
     name="kesh-utils",
-    version="0.3.5",
+    version="0.3.6",
     description="Kesh Utils for Data science/EDA/Data preparation ",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/KeshavShetty/ds",
+    url="https://github.com/KeshavShetty/kesh-utils",
     author="Keshav Shetty",
     author_email="keshavshetty@gmail.com",
     license="MIT",
@@ -27,6 +27,6 @@ setup(
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
     ],
-    packages=["KUtils/common", "KUtils/eda", "KUtils/linear_regression"],
+    packages=["KUtils/classifier", "KUtils/common", "KUtils/eda", "KUtils/linear_regression", "KUtils/logistic_regression"],
     include_package_data=True,
 )
