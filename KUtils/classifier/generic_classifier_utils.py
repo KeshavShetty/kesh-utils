@@ -10,7 +10,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 base_color_list = ['green', 'red', 'blue', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
 
-def tree_classfier_single_hyperparameter_tuning(X_train, y_train,                                                
+def single_hyperparameter_multiple_scoring_tuning(X_train, y_train,                                                
                                                 cv_folds=10, 
                                                 hyper_parameter_name='max_depth',
                                                 hyper_parameter_range = range(10, 40),                                                
@@ -33,14 +33,14 @@ def tree_classfier_single_hyperparameter_tuning(X_train, y_train,
     # scores of GridSearch CV
     scores = treeGrid.cv_results_
     
-    plot_single_hyperparameter_tuning_result(scores, hyper_parameter_name, model_scoring)
+    plot_single_hyperparameter_multiple_scoring_tuning_result(scores, hyper_parameter_name, model_scoring)
 
     print("Best score", treeGrid.best_score_)
     print("Best Estimator", treeGrid.best_estimator_)
 
     return scores
     
-def plot_single_hyperparameter_tuning_result(scores, hyper_parameter_name, model_scoring) :
+def plot_single_hyperparameter_multiple_scoring_tuning_result(scores, hyper_parameter_name, model_scoring) :
     
     plt.figure(figsize=(13, 8))
     plt.title("Multiple scorers evaluation", fontsize=16)
@@ -261,3 +261,45 @@ def iv_woe(df, columns_to_treat, target_column, value_preference='IV', drop_orig
         if show_woe == True:
             print(d)
     return df, iv_df
+
+def single_hyperparameter_single_scoring_tuning(X_train, y_train,                                                
+                                                cv_folds=10, 
+                                                hyper_parameter_name='max_depth',
+                                                hyper_parameter_range = range(10, 40),                                                
+                                                classifier_algo=DecisionTreeClassifier(random_state=100),
+                                                model_scoring="f1" # 
+                                                ):
+    # parameters to build the model on
+    parameters = {hyper_parameter_name: hyper_parameter_range}
+
+    # instantiate the model
+    dtree = classifier_algo
+
+    # fit tree on training data
+    treeGrid = GridSearchCV(dtree, parameters, cv=cv_folds, scoring=model_scoring, return_train_score=True, verbose = 1)
+    treeGrid.fit(X_train, y_train)
+
+    # scores of GridSearch CV
+    scores = treeGrid.cv_results_
+    
+    plot_single_hyperparameter_single_scoring_tuning(scores, hyper_parameter_name, model_scoring)
+
+    print("Best score", treeGrid.best_score_)
+    print("Best Estimator", treeGrid.best_estimator_)
+
+    return scores
+
+def plot_single_hyperparameter_single_scoring_tuning(scores, hyper_parameter_name, model_scoring) :
+    
+    plt.figure()
+    plt.plot(scores["param_"+hyper_parameter_name], 
+             scores["mean_train_score"], 
+             label="training score")
+    plt.plot(scores["param_"+hyper_parameter_name], 
+             scores["mean_test_score"], 
+             label="test score")
+    plt.xlabel(hyper_parameter_name)
+    plt.ylabel(model_scoring)
+    plt.legend(loc="best")
+    plt.grid(True)
+    plt.show()
