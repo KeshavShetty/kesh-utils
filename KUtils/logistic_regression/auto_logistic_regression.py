@@ -88,11 +88,11 @@ def fit(df, dependent_column,
         scale_numerical = False,
         scaler_object = StandardScaler(),
         apply_smote = False,
-        default_list_of_columns_to_retain = [], # Columsn or features must in the model       
+        default_list_of_columns_to_retain = [], # Columsn or features must be in the model (Retain those features)       
         dummies_creation_drop_column_preference='dropFirst', # Available options dropFirst, dropMax, dropMin
         train_split_size = 0.7,
         max_features_to_select = 0, # max_features_to_select=0 means Select all fields
-        random_state_to_use=100,
+        random_state_to_use=43,
         include_data_in_return = False,
         verbose=False) :    
 
@@ -120,10 +120,9 @@ def fit(df, dependent_column,
         print('after dummies='+str(data_for_auto_lr.columns))
     ## Scale numerical Feature scaling
     if scale_numerical:
-        numerical_column_names.remove(dependent_column)
-        print('Scaling numerical columns:' + str(numerical_column_names) )
-        print('Scaling with '+str(scaler_object))
-        data_for_auto_lr[numerical_column_names] = scaler_object.fit_transform(data_for_auto_lr[numerical_column_names])
+        numerical_column_names.remove(dependent_column)        
+        cutils.scale_features(data_for_auto_lr, numerical_column_names, scaler_object)
+        # data_for_auto_lr[numerical_column_names] = scaler_object.fit_transform(data_for_auto_lr[numerical_column_names])
     
     if verbose:
         print('Building model...')
