@@ -46,6 +46,7 @@ from KUtils.common import utils
 
 base_color_list = ['green', 'red', 'blue', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
 
+sns.set(rc={'figure.figsize':(12,8)})
 
 save_images = False
 default_image_save_location = "d:\\temp\\plots"
@@ -71,14 +72,9 @@ def plot(df, column_list=[], chart_type=None, optional_settings={}):
                 if chart_type=='barchart': # Even though it is numerical you are forcing to use barchart using binning
                     no_of_bins = 10 
                     if optional_settings.get('no_of_bins')!=None:
-                        no_of_bins = optional_settings.get('no_of_bins')
-                        
-                    start_idx = min(df[column_list[0]])
-                    end_idx = max(df[column_list[0]])
-                    step = (end_idx - start_idx)/no_of_bins
-                    bin_labels = np.arange(start_idx, end_idx, step).tolist()
+                        no_of_bins = optional_settings.get('no_of_bins')                    
                     temp_column_name = 'tmp_'+column_list[0]
-                    df[temp_column_name] = pd.cut(df[column_list[0]], no_of_bins, labels=bin_labels )
+                    df[temp_column_name] = pd.cut(df[column_list[0]], no_of_bins )
                     uni_category_barchart(df,temp_column_name, optional_settings)
                     del df[temp_column_name]
                 elif chart_type=='distplot':
@@ -343,7 +339,9 @@ def multi_continuous_category_category_boxplot(df, continuous1, category2, categ
 
 def bi_category_category_crosstab_percentage(df, category_column1, category_column2) :
     ct=pd.crosstab(df[category_column1], df[category_column2])
-    ct.div(ct.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True)
+    cross_df=ct.div(ct.sum(1).astype(float), axis=0)
+    cross_df=cross_df.sort_values(cross_df.columns[1])
+    cross_df.plot(kind="bar", stacked=True)
     
 def bi_category_category_stacked_barchart(df, category_column1, category_column2) :   
     df.groupby([category_column1, category_column2]).size().unstack().plot.bar(stacked=True)
