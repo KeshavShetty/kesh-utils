@@ -84,7 +84,7 @@ def plot(df, column_list=[], chart_type=None, optional_settings={}):
         elif len(column_list)==2: # Bivariate or Segmented Univariate
             if len(categorical_columns)==2 : # Both are categorical
                 if chart_type=='crosstab': # Percentage
-                    bi_category_category_crosstab_percentage(df, categorical_columns[0], categorical_columns[1])
+                    bi_category_category_crosstab_percentage(df, categorical_columns[0], categorical_columns[1],optional_settings)
                 elif chart_type=='stacked_barchart': # Stacked barchart
                     bi_category_category_stacked_barchart(df, categorical_columns[0], categorical_columns[1])
                 else:
@@ -97,6 +97,17 @@ def plot(df, column_list=[], chart_type=None, optional_settings={}):
                     bi_continuous_category_distplot(df, numerical_columns[0], categorical_columns[0])
                 elif chart_type=='violinplot' :
                     bi_continuous_category_violinplot(df, numerical_columns[0], categorical_columns[0])
+                elif chart_type=='barchart' or chart_type=='crosstab' :
+                    no_of_bins = 10 
+                    if optional_settings.get('no_of_bins')!=None:
+                        no_of_bins = optional_settings.get('no_of_bins')                    
+                    temp_column_name = 'tmp_'+column_list[0]
+                    df[temp_column_name] = pd.cut(df[column_list[0]], no_of_bins )
+                    if chart_type=='barchart':
+                        bi_category_category_countplot(df, temp_column_name, categorical_columns[0])
+                    else: # Crosstab
+                        bi_category_category_crosstab_percentage(df, temp_column_name, categorical_columns[0], optional_settings)
+                    del df[temp_column_name]
                 else:
                     bi_continuous_category_boxplot(df, numerical_columns[0], categorical_columns[0])
                 # Todo: What about other combination? category vs continuous
@@ -337,10 +348,15 @@ def multi_continuous_category_category_boxplot(df, continuous1, category2, categ
     sns.boxplot(y=continuous1, x=category2, hue=category3, data=df)
 
 
-def bi_category_category_crosstab_percentage(df, category_column1, category_column2) :
+def bi_category_category_crosstab_percentage(df, category_column1, category_column2, optional_settings={}):
     ct=pd.crosstab(df[category_column1], df[category_column2])
     cross_df=ct.div(ct.sum(1).astype(float), axis=0)
-    cross_df=cross_df.sort_values(cross_df.columns[1])
+    sort_by_value=False
+    if optional_settings.get('sort_by_value')!=None:
+        sort_by_value = optional_settings.get('sort_by_value')
+    if sort_by_value==True:
+        cross_df=cross_df.sort_values(cross_df.columns[1])
+    print(cross_df)
     cross_df.plot(kind="bar", stacked=True)
     
 def bi_category_category_stacked_barchart(df, category_column1, category_column2) :   
