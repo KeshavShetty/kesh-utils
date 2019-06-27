@@ -5,7 +5,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score, make_scorer, recall_score, precision_score, roc_auc_score
+from sklearn.model_selection import RandomizedSearchCV
+
+from sklearn.metrics import accuracy_score, make_scorer, recall_score, precision_score, roc_auc_score, f1_score
+
 from sklearn.tree import DecisionTreeClassifier
 
 base_color_list = ['green', 'red', 'blue', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
@@ -15,11 +18,16 @@ def single_hyperparameter_multiple_scoring_tuning(X_train, y_train,
                                                 hyper_parameter_name='max_depth',
                                                 hyper_parameter_range = range(10, 40),                                                
                                                 classifier_algo=DecisionTreeClassifier(random_state=100),
-                                                refit='Precision',
-                                                model_scoring = {'Precision': make_scorer(precision_score),
-                                                                 'Recall': make_scorer(recall_score), #  'Accuracy': make_scorer(accuracy_score),
-                                                                 'AUC': make_scorer(roc_auc_score)}
+                                                refit='AUC',
+                                                model_scoring = {'F1': make_scorer(f1_score),
+                                                                 'AUC': make_scorer(roc_auc_score),
+                                                                 'Accuracy': make_scorer(accuracy_score)        #  'Accuracy': make_scorer(accuracy_score),
+                                                                 },
+                                                use_random_search_cv=False
                                                 ):
+    if use_random_search_cv:
+        print('* Caution: Chart may not be accurate as Random serach won\'t follow linear brute force approach')
+        print('  Just use best estimator and parameters and don\'t rely on charts')
     # parameters to build the model on
     parameters = {hyper_parameter_name: hyper_parameter_range}
 
@@ -27,7 +35,12 @@ def single_hyperparameter_multiple_scoring_tuning(X_train, y_train,
     dtree = classifier_algo
 
     # fit tree on training data
-    treeGrid = GridSearchCV(dtree, parameters, cv=cv_folds, scoring=model_scoring, refit=refit, return_train_score=True, verbose = 1)
+    if use_random_search_cv:
+        treeGrid = RandomizedSearchCV(dtree, parameters, cv=cv_folds, scoring=model_scoring, refit=refit, return_train_score=True, verbose = 1)
+    else:
+        treeGrid = GridSearchCV(dtree, parameters, cv=cv_folds, scoring=model_scoring, refit=refit, return_train_score=True, verbose = 1)
+       
+    
     treeGrid.fit(X_train, y_train)
 
     # scores of GridSearch CV
@@ -50,7 +63,7 @@ def plot_single_hyperparameter_multiple_scoring_tuning_result(scores, hyper_para
     
     # Get the regular numpy array from the MaskedArray
     X_axis = np.array(scores['param_'+hyper_parameter_name].data, dtype=float)
-    
+    X_axis.sort() 
     ax = plt.gca()
     ax.set_xlim(min(X_axis), max(X_axis))
     
@@ -88,10 +101,11 @@ def tree_classfier_two_hyperparameter_tuning(X_train, y_train,
                                                      'max_depth': range(3, 6, 1),
                                                      'min_samples_leaf': range(20, 101, 20)},                                             
                                              classifier_algo=DecisionTreeClassifier(random_state=100),
-                                             refit='Precision',
-                                             model_scoring = {'Precision': make_scorer(precision_score),
-                                                              'Recall': make_scorer(recall_score), #  'Accuracy': make_scorer(accuracy_score),
-                                                              'AUC': make_scorer(roc_auc_score)}
+                                             refit='AUC',
+                                             model_scoring = {'F1': make_scorer(f1_score),
+                                                              'AUC': make_scorer(roc_auc_score),
+                                                              'Accuracy': make_scorer(accuracy_score) #  'Accuracy': make_scorer(accuracy_score),
+                                                              }
                                              ):
         
     dtree = classifier_algo
@@ -227,6 +241,7 @@ def iv_woe(df, columns_to_treat, target_column, value_preference='IV', drop_orig
     
     #Run WOE and IV on all the independent variables
     for ivars in cols:
+        print(ivars)
         d0 = pd.DataFrame({'x': df[ivars], 'y': df[target_column]})
         d = d0.groupby("x", as_index=False).agg({"y": ["count", "sum"]})
         d.columns = ['Level', 'N', 'Events']
@@ -303,3 +318,23 @@ def plot_single_hyperparameter_single_scoring_tuning(scores, hyper_parameter_nam
     plt.legend(loc="best")
     plt.grid(True)
     plt.show()
+    
+def kesh_label_encoder(df, binary_classification_target_column, columns_to_treat=[], verbose=False):
+    if len(columns_to_treat)==0: # Apply for all categorical
+        all_columns = list(df.columns)
+        all_columns.remove(binary_classification_target_column)
+        columns_to_treat = df[all_columns].select_dtypes(include=['category', object]).columns.tolist()
+
+    for a_column_to_treat in columns_to_treat:
+        if verbose:
+            print(a_column_to_treat)
+        ct=pd.crosstab(df[a_column_to_treat], df[binary_classification_target_column])
+        cross_df=ct.div(ct.sum(1).astype(float), axis=0)
+        cross_df=cross_df.sort_values(cross_df.columns[1])
+        value_order = list(cross_df.index)
+        cat_label = 1
+        for aVal in value_order:
+            if verbose:
+                print('Replacing [' + aVal + '] with '+str(cat_label))
+            df.loc[df[a_column_to_treat]==aVal,a_column_to_treat]=cat_label
+            cat_label = cat_label+1
