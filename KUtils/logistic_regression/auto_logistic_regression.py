@@ -144,15 +144,19 @@ def fit(df, dependent_column,
         print('After smote ' + str(X_train.shape))
         
     # Set max_features_to_select if not passed
-    if max_features_to_select<=0 : # So no parameter passed, use all available column
+    if max_features_to_select==0 : # So no parameter passed, use all available column
         max_features_to_select = len(X_train.columns)-1
     
-    # First run RFE
-    glm = LogisticRegression(solver='lbfgs') # solver='lbfgs' Refer: https://machinelearningmastery.com/how-to-fix-futurewarning-messages-in-scikit-learn/
-    rfe = RFE(glm, max_features_to_select) 
-    rffilter = rfe.fit(X_train, y_train)
-    columns_to_use_further = X_train.columns[rfe.support_]
-    columns_to_use_further = columns_to_use_further.tolist()
+    if (max_features_to_select!=-1): # Run RFE
+        # First run RFE
+        glm = LogisticRegression(solver='lbfgs') # solver='lbfgs' Refer: https://machinelearningmastery.com/how-to-fix-futurewarning-messages-in-scikit-learn/
+        rfe = RFE(glm, max_features_to_select) 
+        rffilter = rfe.fit(X_train, y_train)
+        columns_to_use_further = X_train.columns[rfe.support_]
+        columns_to_use_further = columns_to_use_further.tolist()
+    else:
+        columns_to_use_further = X_train.columns
+        columns_to_use_further = columns_to_use_further.tolist()
     
     if verbose:
         print('First Model afte RFE')
