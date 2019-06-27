@@ -20,7 +20,7 @@ def plotUnique(df, optional_settings={}):
     
 def plotNullInColumns(df, optional_settings={}):
     aSeries = df.isnull().sum() 
-    if sum(aSeries>0):
+    if sum(aSeries)>0:
         optional_settings.update({'exclude_zero_column':True})
         optional_settings.update({'x_label':'Features'}) 
         optional_settings.update({'y_label':'Missing Count'})
@@ -32,29 +32,33 @@ def plotNullInColumns(df, optional_settings={}):
 def plotNullInRows(df, optional_settings={}):
     no_of_columns = df.shape[1]
     colNulls = df.isnull().sum(axis=1)
-    colNulls = colNulls*100/no_of_columns
-    df['nan_percentage']=colNulls
-    
-    # Todo: Try Range instead of hrdcoded value (Take care when Percentage is 0)
-    df['nan_percentage_bin'] = pd.cut(df['nan_percentage'], 
-              [-1, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100], 
-              labels=['<0', '<=5%', '<=10%', '<=15', '<=20', '<=25', '<=30',
-                      '<=35','<=40','<=45', '<=50', '<=55', '<=60', '<=65', '<=70', '<=75', '<=80','<=85', '<=90', '<=95', '<=100'])
-    
-    data_for_chart = df['nan_percentage_bin'].value_counts(dropna=False)  
-    data_for_chart = data_for_chart.loc[data_for_chart.index!='<0'] # Remove zero percentage
-    
-    df.drop(['nan_percentage', 'nan_percentage_bin'], axis=1, inplace=True) # No more required
-    
-    if len(data_for_chart)==0:
-        print('No nulls found')
-    else:
-        optional_settings.update({'x_label':'Percenatge Bin'}) 
-        optional_settings.update({'y_label':'Number of records'})
-        optional_settings.update({'chart_title':'Percenatge of missing values in each Row'})
-        optional_settings.update({'sort_by_value':False})
-        chartil.core_barchart_from_series(data_for_chart, optional_settings)
-   
+    if sum(colNulls)>0:
+        colNulls = colNulls*100/no_of_columns
+        df['nan_percentage']=colNulls
+        
+        # Todo: Try Range instead of hrdcoded value (Take care when Percentage is 0)
+        df['nan_percentage_bin'] = pd.cut(df['nan_percentage'], 
+                  [-1, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100], 
+                  labels=['<0', '<=5%', '<=10%', '<=15', '<=20', '<=25', '<=30',
+                          '<=35','<=40','<=45', '<=50', '<=55', '<=60', '<=65', '<=70', '<=75', '<=80','<=85', '<=90', '<=95', '<=100'])
+        
+        data_for_chart = df['nan_percentage_bin'].value_counts(dropna=False)  
+        data_for_chart = data_for_chart.loc[data_for_chart.index!='<0'] # Remove zero percentage
+        
+        df.drop(['nan_percentage', 'nan_percentage_bin'], axis=1, inplace=True) # No more required
+        
+        if len(data_for_chart)==0:
+            print('No nulls found')
+        else:
+            optional_settings.update({'x_label':'Percenatge Bin'}) 
+            optional_settings.update({'y_label':'Number of records'})
+            optional_settings.update({'chart_title':'Percenatge of missing values in each Row'})
+            optional_settings.update({'sort_by_value':False})
+            chartil.core_barchart_from_series(data_for_chart, optional_settings)
+    else :
+        print('Nothing to plot. All series value are 0')
+
+       
 def cap_outliers_using_iqr(df, column_to_treat, lower_quantile=0.25, upper_quantile=0.75, iqr_range=1.5):
     q1 = df[column_to_treat].quantile(lower_quantile)
     q3 = df[column_to_treat].quantile(upper_quantile)
