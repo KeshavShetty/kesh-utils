@@ -48,8 +48,9 @@ def single_hyperparameter_multiple_scoring_tuning(X_train, y_train,
     
     plot_single_hyperparameter_multiple_scoring_tuning_result(scores, hyper_parameter_name, model_scoring)
 
-    print("Best score", treeGrid.best_score_)
-    print("Best Estimator", treeGrid.best_estimator_)
+    print("Best score: ", treeGrid.best_score_)
+    print("Best Estimator: ", treeGrid.best_estimator_)
+    print("Best Params: ", treeGrid.best_params_)
 
     return scores
     
@@ -121,6 +122,7 @@ def tree_classfier_two_hyperparameter_tuning(X_train, y_train,
     
     print("Best score", grid_search.best_score_)
     print("Best Estimator", grid_search.best_estimator_)
+    print("Best Params", grid_search.best_params_)
     
     return scores
     
@@ -299,8 +301,9 @@ def single_hyperparameter_single_scoring_tuning(X_train, y_train,
     
     plot_single_hyperparameter_single_scoring_tuning(scores, hyper_parameter_name, model_scoring)
 
-    print("Best score", treeGrid.best_score_)
-    print("Best Estimator", treeGrid.best_estimator_)
+    print("Best score: ", treeGrid.best_score_)
+    print("Best Estimator: ", treeGrid.best_estimator_)
+    print("Best Params: ", treeGrid.best_params_)
 
     return scores
 
