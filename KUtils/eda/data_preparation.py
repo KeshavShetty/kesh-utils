@@ -72,7 +72,7 @@ def cap_outliers_using_iqr(df, column_to_treat, lower_quantile=0.25, upper_quant
 def cap_outliers_using_zscore(df):
 	# Todo
 	# Refer 
-	# df=dataset[~(np.abs(stats.zscore(dataset)) < 3).all(axis=1)] # This drops rows with zscore away from 2 stddev
+	# dataset=dataset.drop(dataset[~(np.abs(stats.zscore(dataset)) < 3).all(axis=1)].index) # This drops rows with zscore away from 2 stddev
 	
 def fill_category_column_na_with_new(df, column_name, na_column_name='Unknown'): 
     df[column_name].fillna(na_column_name, inplace=True)
