@@ -73,6 +73,7 @@ def cap_outliers_using_zscore(df):
 	# Todo
 	# Refer 
 	# dataset=dataset.drop(dataset[~(np.abs(stats.zscore(dataset)) < 3).all(axis=1)].index) # This drops rows with zscore away from 2 stddev
+	# https://www.kaggle.com/ymayank97/predicting-factors-responsible-for-heart-disease
 	
 def fill_category_column_na_with_new(df, column_name, na_column_name='Unknown'): 
     df[column_name].fillna(na_column_name, inplace=True)
