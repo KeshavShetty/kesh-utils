@@ -57,7 +57,6 @@ def plotNullInRows(df, optional_settings={}):
             chartil.core_barchart_from_series(data_for_chart, optional_settings)
     else :
         print('Nothing to plot. All series value are 0')
-
        
 def cap_outliers_using_iqr(df, column_to_treat, lower_quantile=0.25, upper_quantile=0.75, iqr_range=1.5):
     q1 = df[column_to_treat].quantile(lower_quantile)
@@ -68,12 +67,58 @@ def cap_outliers_using_iqr(df, column_to_treat, lower_quantile=0.25, upper_quant
     df.loc[df[column_to_treat]<lower_value, column_to_treat] = lower_value
     df.loc[df[column_to_treat]>upper_value, column_to_treat] = upper_value
     print('Done')
+    
+def drop_outliers_using_iqr(df, column_to_treat, lower_quantile=0.25, upper_quantile=0.75, iqr_range=1.5):
+    q1 = df[column_to_treat].quantile(lower_quantile)
+    q3 = df[column_to_treat].quantile(upper_quantile)
+    iqr = q3 - q1
+    lower_value = q1 - iqr_range*iqr
+    upper_value = q3 + iqr_range*iqr
+    
+    df.drop(df.index[df[column_to_treat]<lower_value], inplace = True)
+    df.drop(df.index[df[column_to_treat]>upper_value], inplace = True)
+    
+    print('Done')
 
-def cap_outliers_using_zscore(df):
-	# Todo
-	# Refer 
-	# dataset=dataset.drop(dataset[~(np.abs(stats.zscore(dataset)) < 3).all(axis=1)].index) # This drops rows with zscore away from 2 stddev
-	# https://www.kaggle.com/ymayank97/predicting-factors-responsible-for-heart-disease
+def cap_outliers_using_zscore(df, column_to_treat, z_score_cap=3): # z_score_cap=Z-score is the number of standard deviations from the mean a data point is 
+	 
+    data_mean = np.mean(df[column_to_treat])
+    data_stddev = np.std(df[column_to_treat])
+    
+    lower_value = data_mean - z_score_cap*data_stddev
+    upper_value = data_mean + z_score_cap*data_stddev
+    
+    df.loc[df[column_to_treat]<lower_value, column_to_treat] = lower_value
+    df.loc[df[column_to_treat]>upper_value, column_to_treat] = upper_value
+    print('Done')
+
+def drop_outliers_using_zscore(df, column_to_treat, z_score_cap=3): # z_score_cap=Z-score is the number of standard deviations from the mean a data point is 
+	
+    data_mean = np.mean(df[column_to_treat])
+    data_stddev = np.std(df[column_to_treat])
+    
+    lower_value = data_mean - z_score_cap*data_stddev
+    upper_value = data_mean + z_score_cap*data_stddev
+    
+    df.drop(df.index[df[column_to_treat]<lower_value], inplace = True)
+    df.drop(df.index[df[column_to_treat]>upper_value], inplace = True)
+    
+    print('Done')
+    
+def cap_outliers_using_percentile(df, column_to_treat, lower_percent=2, upper_percent=98):
+    upper_limit = np.percentile(df[column_to_treat], upper_percent) 
+    lower_limit = np.percentile(df[column_to_treat], lower_percent) # Filter the outliers from the dataframe    
+    df.loc[df[column_to_treat]<lower_limit, column_to_treat] = lower_limit
+    df.loc[df[column_to_treat]>upper_limit, column_to_treat] = upper_limit
+    print('Done')
+    
+def drop_outliers_using_percentile(df, column_to_treat, lower_percent=2, upper_percent=98):
+    upper_limit = np.percentile(df[column_to_treat], upper_percent) 
+    lower_limit = np.percentile(df[column_to_treat], lower_percent) # Filter the outliers from the dataframe    
+    
+    df.drop(df.index[df[column_to_treat]<lower_limit], inplace = True)
+    df.drop(df.index[df[column_to_treat]>upper_limit], inplace = True)
+    print('Done')
 	
 def fill_category_column_na_with_new(df, column_name, na_column_name='Unknown'): 
     df[column_name].fillna(na_column_name, inplace=True)
@@ -98,9 +143,3 @@ def drop_rows_with_na_percentage_in_row(df, percent_value):
     df.drop(['nan_percentage'], axis=1, inplace=True) # nan_percentage No more required
     print('Done')
     
-def cap_outliers_using_percentile(df, column_to_treat, lower_percent=2, upper_percent=98):
-    upper_limit = np.percentile(df[column_to_treat], upper_percent) 
-    lower_limit = np.percentile(df[column_to_treat], lower_percent) # Filter the outliers from the dataframe    
-    df.loc[df[column_to_treat]<lower_limit, column_to_treat] = lower_limit
-    df.loc[df[column_to_treat]>upper_limit, column_to_treat] = upper_limit
-    print('Done')
