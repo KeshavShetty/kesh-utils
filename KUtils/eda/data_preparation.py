@@ -5,6 +5,8 @@ from KUtils.eda import data_preparation as dp
 import numpy as np
 import pandas as pd
 
+import re
+
 from KUtils.eda import chartil
 
 def plotUnique(df, optional_settings={}):
@@ -157,10 +159,16 @@ def transform_continuous_by_boxcox(df, columns_to_treat=[], lambda_value=0.15, s
         skewed_feet_df = skewed_feet_df.loc[abs(skewed_feet_df['Skew']) > 0.75]
         skewness_to_treat = list(skewed_feet_df.index)
         for a_col in skewness_to_treat:
-            print('Transforming {0} using coxbox1p'.format(a_col))
+            print('Transforming {0} using boxcox1p'.format(a_col))
             df[a_col] = boxcox1p(df[a_col], lambda_value)
     else:
         for a_col in columns_to_treat:
             df[a_col] = boxcox1p(df[a_col], lambda_value)
     # No need to return the data. Inplace transformation done.
     
+def fix_invalid_column_names(df): # For Kalgo columns with -.$ wil throw exception, so replace all such chars in column nmae with underscore
+    invalid_column_names = [x for x in list(df.columns.values) if not x.isidentifier() ]                              
+    for a_colname in invalid_column_names:
+        new_colname = re.sub("[-@$.:;*~ +=# ]", "_", a_colname)
+        df.rename(columns={a_colname:new_colname},inplace=True)
+        print('  ' + a_colname+' Replaced with ' + new_colname)
