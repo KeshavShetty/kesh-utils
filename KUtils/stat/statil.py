@@ -4,9 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from scipy.stats import normaltest, ttest_ind, chi2_contingency
+from scipy.stats import norm, skew, normaltest, ttest_ind, chi2_contingency
     
-def run_stat_test(df, target_feature_name, p_value_cutoff=0.05):
+# Refer https://stattrek.com/chi-square-test/independence.aspx
+
+def binary_target_run_full_stat_test(df, target_feature_name, p_value_cutoff=0.05):
     
     df_categorical = df.select_dtypes(include=['object', 'category'])
     
@@ -15,28 +17,37 @@ def run_stat_test(df, target_feature_name, p_value_cutoff=0.05):
     numerical_column_names =  [i for i in df.columns if not i in df_categorical.columns]
     
     for col_name in categorical_column_names:
-        binary_classification_chi_test_for_categorical(df, col_name, target_feature_name, p_value_cutoff)
+        binary_target_chi_test_for_categorical(df, col_name, target_feature_name, p_value_cutoff)
         
     for col_name in numerical_column_names:
-        binary_classification_normal_stat_clt_test(df, col_name, target_feature_name, p_value_cutoff)    
+        binary_target_normal_stat_clt_test(df, col_name, target_feature_name, p_value_cutoff)    
 
-def binary_classification_chi_test_for_categorical(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05):
+def binary_target_run_stat_test(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05):
+    
+    if df[feature_to_examine].dtype.kind=='O':
+        binary_target_chi_test_for_categorical(df, feature_to_examine, target_feature_name, p_value_cutoff)
+    else: # Column is numeric
+        binary_target_normal_stat_clt_test(df, feature_to_examine, target_feature_name, p_value_cutoff)    
+        
+def binary_target_chi_test_for_categorical(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05):
     cr_tab = pd.crosstab(df[feature_to_examine],df[target_feature_name])
     chi_stat = chi2_contingency(cr_tab)
     print('Running stats on ' + feature_to_examine)
-    print(f'  Chi statistics is {chi_stat[0]} and  p value is {chi_stat[1]}')
+    print('  Chi statistics is {0:.3f} and  p value is {1:.3f}'.format(chi_stat[0], chi_stat[1]))
     
     if chi_stat[1]<p_value_cutoff:
         print('\tRejecting null hypothesis that ' + feature_to_examine + ' is not significant.')
         print('\tSo Feature has significance and prdective power')
     else:
         print('\tCannot Reject null hypothesis that ' + feature_to_examine + ' is not significant.')
-        print('\tSo may not be significant or has any predictive power)')
+        print('\tSo may not be significant or has any predictive power')
     print('----------------------------------------------------------------------------------------------------------')
     
-def binary_classification_normal_stat_clt_test(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05) :
+def binary_target_normal_stat_clt_test(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05) :
 
-    print('Running stats on ' + feature_to_examine)    
+    mu, sigma = norm.fit(df[feature_to_examine])
+
+    print('Running stats on {0} (mu = {1:.2f} and sigma = {2:.2f})'.format(feature_to_examine, mu, sigma))
     df[target_feature_name] = df[target_feature_name].astype('category')
     
     #cat_unique_list = list(df[target_feature_name].unique())
@@ -93,7 +104,8 @@ def binary_classification_normal_stat_clt_test(df, feature_to_examine, target_fe
     ax[0].axvline(fullset_median, color='blue', linestyle='-')
     ax[0].axvline(fullset_mean, color='blue', linestyle='--')    
     ax[0]=sns.distplot(df[feature_to_examine],bins=15,ax=ax[0])
-    ax[0].set_xlabel(feature_to_examine + ' [Full dataset Mean:'+ str(fullset_mean) + ' ,Median:' + str(fullset_median) +']')
+    xlabel_touse = '{0} [Full dataset Mean:{1:.3f} ,Median:{2:.3f}]'.format(feature_to_examine, fullset_mean, fullset_median)
+    ax[0].set_xlabel(xlabel_touse)
     
     ax[1].axvline(positive_median, color='green', linestyle='-')
     ax[1].axvline(positive_mean, color='green', linestyle='--')
@@ -101,7 +113,8 @@ def binary_classification_normal_stat_clt_test(df, feature_to_examine, target_fe
     ax[1].axvline(negative_mean, color='red', linestyle='--')
     ax[1]=sns.kdeplot(positive_df, label='Positive',shade=True, ax=ax[1], color="green")
     ax[1]=sns.kdeplot(negative_df, label='Negative', shade=True, ax=ax[1], color="red")
-    ax[1].set_xlabel(feature_to_examine + '\n [-ve class Mean:'+ str(negative_mean) + ' ,-ve class Median:' + str(negative_median) +']' + '\n[+ve class Mean:'+ str(positive_mean) + ' ,+ve class Median:' + str(positive_median) +']')
+    xlabel_touse = '{0} \n [-ve class Mean:{1:.3f} ,-ve class Median:{2:.3f}]\n[+ve class Mean:{3:.3f} ,+ve class Median:{4:.3f}]'.format(feature_to_examine, negative_mean, negative_median, positive_mean, positive_median)
+    ax[1].set_xlabel(xlabel_touse)
     
     ax[2].axvline(positive_median, color='green', linestyle='-')
     ax[2].axvline(positive_mean, color='green', linestyle='--')
@@ -118,7 +131,8 @@ def binary_classification_normal_stat_clt_test(df, feature_to_examine, target_fe
     plt.show()
     
     chi_stat, p_value = normaltest(df[feature_to_examine], axis=0)
-    print(f"Normal Test for the feature {feature_to_examine} distribution chi_stat={chi_stat} p-value={p_value}") 
+    
+    print("Normal Test for the feature {0} distribution chi_stat={1:.3f} p-value={2:.3f}".format(feature_to_examine, chi_stat, p_value)) 
     if p_value<p_value_cutoff:
         print(f'\tLow p-value(<{p_value_cutoff}) indicates it is unlikely that data came from a normal distribution.(NOT Normal)')
     else:
@@ -127,7 +141,7 @@ def binary_classification_normal_stat_clt_test(df, feature_to_examine, target_fe
     #Null hypothesis : data came from a normal distribution.    
     # If the p-val is very small, it means it is unlikely that the data came from a normal distribution
     
-    print('Skewness Interpretation: Fairly symmetrical if the skewness is between -0.5 and 0.5)')
+    print('Note: Skewness Interpretation:- Fairly symmetrical if the skewness is between -0.5 and 0.5')
     fullset_skew = pd.DataFrame.skew(df[feature_to_examine], axis=0)    
     print_skewness_report(fullset_skew, 'Full dataset')
     
@@ -139,7 +153,7 @@ def binary_classification_normal_stat_clt_test(df, feature_to_examine, target_fe
     
     #t-test on independent samples
     t2, p2 = ttest_ind(positive_df,negative_df)
-    print("ttest_ind: t = %g  p = %g" % (t2, p2))
+    print("Ttest_ind: t={0:.3f} p={1:.3f}".format(t2, p2))
     if p2<p_value_cutoff:
         print('Rejecting null hypothesis that there is no difference in Mean of +ve and -ve Class.(Go for alternative hypothesis)')
         print('\tThe feature ' + feature_to_examine + ' would be a predictive feature. Count it as important feature')
@@ -150,21 +164,29 @@ def binary_classification_normal_stat_clt_test(df, feature_to_examine, target_fe
     print('----------------------------------------------------------------------------------------------------------')
     
 def print_skewness_report(df_skew, df_title):
-    print(f"\tSkewness for the {df_title} {df_skew}.") 
+    print("\tSkewness for the {0} {1:.3f}.".format(df_title, df_skew)) 
     if df_skew<0: # Nagative
-        print('\tLeft skewed')
+        print('\t  Left skewed')
         if df_skew<-0.5:
-            print('\tdata NOT symmetrical')
+            print('\t    data NOT symmetrical')
         else:
-            print('\tData seems to be fairly symmetrical')
+            print('\t    Data seems to be fairly symmetrical')
     elif df_skew>0: # Positive
-        print('\tRight skewed')
+        print('\t  Right skewed')
         if df_skew>0.5:
-            print('\tdata NOT symmetrical')
+            print('\t    data NOT symmetrical')
         else:
-            print('\tData seems to be fairly symmetrical')
+            print('\t    Data seems to be fairly symmetrical')
     else:
-        print('\tHighly symmetrical')
-        
+        print('\t  Highly symmetrical')
 
+def analyse_skew(df): 
+    df_categorical = df.select_dtypes(include=['object', 'category'])
+    numerical_column_names =  [i for i in df.columns if not i in df_categorical.columns]
+    
+    skewed_features = df[numerical_column_names].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
+    print("\nSkew in numerical features: \n")
+    skewness = pd.DataFrame({'Skew' :skewed_features})
+    print(skewness.head(100))
+    return skewness
      
