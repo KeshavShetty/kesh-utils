@@ -15,12 +15,16 @@ def binary_target_run_full_stat_test(df, target_feature_name, p_value_cutoff=0.0
     categorical_column_names = list(df_categorical.columns)
     categorical_column_names.remove(target_feature_name)
     numerical_column_names =  [i for i in df.columns if not i in df_categorical.columns]
-    
+    imp_feature_df = pd.DataFrame( columns = ['Feature', 'is_important', 'chi_or_T_val'])
     for col_name in categorical_column_names:
-        binary_target_chi_test_for_categorical(df, col_name, target_feature_name, p_value_cutoff)
-        
+        is_feature_important, chi_or_T_val = binary_target_chi_test_for_categorical(df, col_name, target_feature_name, p_value_cutoff)
+        imp_feature_df = imp_feature_df.append({'Feature': col_name, 'is_important':is_feature_important, 'chi_or_T_val':chi_or_T_val}, ignore_index=True)
+            
     for col_name in numerical_column_names:
-        binary_target_normal_stat_clt_test(df, col_name, target_feature_name, p_value_cutoff)    
+        is_feature_important, chi_or_T_val = binary_target_normal_stat_clt_test(df, col_name, target_feature_name, p_value_cutoff)
+        imp_feature_df = imp_feature_df.append({'Feature': col_name, 'is_important':is_feature_important, 'chi_or_T_val':chi_or_T_val}, ignore_index=True)
+    print('Stat summary info on prective power of each feature')
+    print(imp_feature_df)
 
 def binary_target_run_stat_test(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05):
     
@@ -30,6 +34,8 @@ def binary_target_run_stat_test(df, feature_to_examine, target_feature_name, p_v
         binary_target_normal_stat_clt_test(df, feature_to_examine, target_feature_name, p_value_cutoff)    
         
 def binary_target_chi_test_for_categorical(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05):
+    
+    is_feature_important = False # Initial assumption
     cr_tab = pd.crosstab(df[feature_to_examine],df[target_feature_name])
     chi_stat = chi2_contingency(cr_tab)
     print('Running stats on ' + feature_to_examine)
@@ -38,13 +44,17 @@ def binary_target_chi_test_for_categorical(df, feature_to_examine, target_featur
     if chi_stat[1]<p_value_cutoff:
         print('\tRejecting null hypothesis that ' + feature_to_examine + ' is not significant.')
         print('\tSo Feature has significance and prdective power')
+        is_feature_important = True
     else:
         print('\tCannot Reject null hypothesis that ' + feature_to_examine + ' is not significant.')
         print('\tSo may not be significant or has any predictive power')
     print('----------------------------------------------------------------------------------------------------------')
+    return is_feature_important, chi_stat[0]
     
 def binary_target_normal_stat_clt_test(df, feature_to_examine, target_feature_name, p_value_cutoff=0.05) :
 
+    is_feature_important = False # Initial assumption
+    
     mu, sigma = norm.fit(df[feature_to_examine])
 
     print('Running stats on {0} (mu = {1:.2f} and sigma = {2:.2f})'.format(feature_to_examine, mu, sigma))
@@ -157,11 +167,13 @@ def binary_target_normal_stat_clt_test(df, feature_to_examine, target_feature_na
     if p2<p_value_cutoff:
         print('Rejecting null hypothesis that there is no difference in Mean of +ve and -ve Class.(Go for alternative hypothesis)')
         print('\tThe feature ' + feature_to_examine + ' would be a predictive feature. Count it as important feature')
+        is_feature_important = True
     else:
         print('Cannot Reject null hypothesis that there is no difference in Mean of +ve and -ve Class')
         print('\tThe feature ' + feature_to_examine + ' may NOT be important or has any predictive power')
     
     print('----------------------------------------------------------------------------------------------------------')
+    return is_feature_important, t2
     
 def print_skewness_report(df_skew, df_title):
     print("\tSkewness for the {0} {1:.3f}.".format(df_title, df_skew)) 
