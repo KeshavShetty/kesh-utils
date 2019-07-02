@@ -142,4 +142,25 @@ def drop_rows_with_na_percentage_in_row(df, percent_value):
     df.drop(df.index[df['nan_percentage'] >= percent_value], inplace = True)    
     df.drop(['nan_percentage'], axis=1, inplace=True) # nan_percentage No more required
     print('Done')
+
+# Log-transformation of the continuous variable which is right skewed
+def transform_continuous_by_log1p(df, column_to_treat):
+    df[column_to_treat] = np.log1p(df[column_to_treat])
+    
+# Refer http://onlinestatbook.com/2/transformations/box-cox.html
+# https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.special.boxcox1p.html
+def transform_continuous_by_boxcox(df, columns_to_treat=[], lambda_value=0.15, skewness_threshold=0.75): # For highly skewed features
+    from scipy.special import boxcox1p
+    from KUtils.stat import statil
+    if len(columns_to_treat)==0: # Find columns yourself
+        skewed_feet_df = statil.analyse_skew(df)
+        skewed_feet_df = skewed_feet_df.loc[abs(skewed_feet_df['Skew']) > 0.75]
+        skewness_to_treat = list(skewed_feet_df.index)
+        for a_col in skewness_to_treat:
+            print('Transforming {0} using coxbox1p'.format(a_col))
+            df[a_col] = boxcox1p(df[a_col], lambda_value)
+    else:
+        for a_col in columns_to_treat:
+            df[a_col] = boxcox1p(df[a_col], lambda_value)
+    # No need to return the data. Inplace transformation done.
     
