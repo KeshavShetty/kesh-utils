@@ -315,6 +315,8 @@ def uni_continuous_distplot(df, column_name):
 def bi_continuous_continuous_scatterplot(df, column_name1, column_name2, chart_type=None):
     if chart_type=='regplot':
         sns.regplot(data=df, x=column_name1, y=column_name2)
+    elif chart_type=='jointplot':
+        sns.jointplot(df[column_name1],df[column_name2],kind="regg")
     else:
         sns.scatterplot(data=df, x=column_name1, y=column_name2)
     if save_images:
