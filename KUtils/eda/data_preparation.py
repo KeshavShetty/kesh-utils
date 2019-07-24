@@ -172,3 +172,21 @@ def fix_invalid_column_names(df): # For Kalgo columns with -.$ wil throw excepti
         new_colname = re.sub("[-@$.:;*~ +=# ]", "_", a_colname)
         df.rename(columns={a_colname:new_colname},inplace=True)
         print('  ' + a_colname+' Replaced with ' + new_colname)
+
+# This will create a new column boolean type _hasdata and replace original column nan with lowest-1(continuous) or with _unknown(categorical)
+def mass_na_fill_with_substitute_column(df, columns_to_treat=[]):    
+    if len(columns_to_treat)==0: # Apply to all columns which has 1+ missing values
+        aSeries = df.isnull().sum() 
+        aSeries = aSeries[aSeries!=0]
+        columns_to_treat = list(aSeries.index)
+
+    for a_column_to_treat in columns_to_treat:
+        if df[a_column_to_treat].isnull().sum()>0:
+            new_substitute_column=a_column_to_treat+'_has_data'
+            df[new_substitute_column] = ~pd.isnull(df[a_column_to_treat])
+            if df[a_column_to_treat].dtype.kind=='O': # Categorical
+                df[a_column_to_treat].fillna('_Unknown', inplace=True)
+            else: # numerical
+                df[a_column_to_treat].fillna(min(df[a_column_to_treat])-1, inplace=True)
+            
+            df[new_substitute_column] = df[new_substitute_column].map({True:1, False:0})

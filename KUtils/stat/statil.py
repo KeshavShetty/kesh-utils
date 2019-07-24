@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from scipy.stats import norm, skew, normaltest, ttest_ind, chi2_contingency
+
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
     
 # Refer https://stattrek.com/chi-square-test/independence.aspx
 
@@ -201,4 +204,57 @@ def analyse_skew(df):
     skewness = pd.DataFrame({'Skew' :skewed_features})
     print(skewness.head(100))
     return skewness
-     
+   
+def anova_one_way_test(df, target_continuous_column, columns_to_analyse, prob_cut_off = 0.05):
+    
+    if df[target_continuous_column].dtype.kind=='O':
+        raise Exception('Target_column varibale should be numeric. Convert it and try again')
+       
+    param_for_ols = ''
+    for col_name in columns_to_analyse:
+        if len(param_for_ols)!=0:
+            param_for_ols = param_for_ols + ' + '
+        param_for_ols = param_for_ols + col_name
+    
+    # Add target column at the begining
+    param_for_ols = target_continuous_column + ' ~ ' + param_for_ols
+    anova_df = sm.stats.anova_lm(ols(param_for_ols, data=df).fit(), typ=2)
+    print('------- Anova Summary -------')
+    print(anova_df)
+    print('-----------------------------')
+    for col_name in columns_to_analyse:  
+        anova_row = anova_df.loc[col_name]
+        f_stat_prob = anova_row['PR(>F)']
+        if f_stat_prob < prob_cut_off :
+            print('Yes, ' + anova_row.name + ' has predictive power for ' + target_continuous_column + ' since  PR(>F) < ' + str(prob_cut_off))
+        else:
+            print('No, ' + anova_row.name + ' has NO predictive power for ' + target_continuous_column + ' since  PR(>F) > ' + str(prob_cut_off))
+    return anova_df
+
+
+#https://devdocs.io/statsmodels/examples/notebooks/generated/interactions_anova        
+def anova_two_way_test(df, 
+                       target_continuous_column, 
+                       first_column_to_analyse, 
+                       second_column_to_analyse, 
+                       prob_cut_off = 0.05):
+    jointlm_str = target_continuous_column + ' ~ C(' + first_column_to_analyse + ') * C(' + second_column_to_analyse + ')'
+    joint_lm = ols(jointlm_str, data=df).fit()
+    
+    first_lm_str = target_continuous_column + ' ~ C(' + first_column_to_analyse + ') + C(' + second_column_to_analyse + ')'  
+    print('------- Anova Summary of -------\n' + first_lm_str + ' against\n' + jointlm_str)
+    print(sm.stats.anova_lm(ols(first_lm_str, data=df).fit(), joint_lm))
+    print('-----------------------------------')
+    
+    primary_str = target_continuous_column + ' ~ C('+first_column_to_analyse+')'
+    secondary_str = target_continuous_column + ' ~ C('+first_column_to_analyse+') + C('+second_column_to_analyse+', Sum)'
+    print('------- Anova Summary of -------\n' + primary_str + ' against\n' + secondary_str)
+    print('-----------------------------------')
+    print(sm.stats.anova_lm(ols(primary_str, data=df).fit(),
+               ols(secondary_str,data=df).fit()))
+    
+    primary_str = target_continuous_column + ' ~ C('+second_column_to_analyse+')'
+    secondary_str = target_continuous_column + ' ~ C(' + first_column_to_analyse + ') + C('+second_column_to_analyse+', Sum)'
+    print('------- Anova Summary of -------\n' + primary_str + ' against\n' + secondary_str)
+    print(sm.stats.anova_lm(ols(primary_str, data=df).fit(), ols(secondary_str, data=df).fit()))
+    print('-----------------------------------')
